@@ -1,0 +1,9 @@
+<mat-form-field>
+  <!-- panelClass to override styling -->
+  <mat-select placeholder="Select" disableRipple panelClass="" [(value)]="selectedDropdownItem.value">
+    <mat-option *ngFor="let item of listData" [value]="item.value"
+     (mousedown)="onDropdownItemSelection(item,$event)">
+      {{ item.label }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>

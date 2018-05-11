@@ -1,0 +1,10 @@
+<h1 mat-dialog-title>Hi {{data.name}}</h1>
+<div mat-dialog-content>
+  <p>This is a angular material modal dialog</p>
+  <p>Demonstrate how to pass value from modal dialog to
+    Setting active to inactive </p>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onCancelClick()">Cancel</button>
+  <button mat-button [mat-dialog-close]="data.name" cdkFocusInitial>Ok</button>
+</div>
