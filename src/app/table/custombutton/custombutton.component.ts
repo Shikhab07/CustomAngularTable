@@ -26,7 +26,6 @@ export class CustomButtonComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(result => {
             // result has the value returned on closing dialog
-            console.log('The dialog was closed');
             this.rowData.status = 'inactive';
             this.statusChange.emit(this.rowData);
         });

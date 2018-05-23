@@ -1,0 +1,44 @@
+.ng2-smart-action-multiple-select, checkbox-editor {
+  input[type='checkbox'] {
+    appearance: radio;
+    -webkit-appearance: radio;
+    -moz-appearance: radio;
+    -ms-appearance: radio;
+    -o-appearance: radio;
+  }
+}
+
+
+.add-top-margin {
+  margin-top: 20px;
+}
+
+.btn-add {
+  margin-right: 27px;
+}
+
+.ng2-smart-th {
+  &.checkbox {
+    border-bottom: none;
+  }
+}
+
+.ng2-smart-actions {
+  display: none;
+}
+
+ng2-smart-table {
+  font-size: 15px !important;
+  tr {
+    th,
+    td {
+      border: 1px solid #eee;
+      &:first-child {
+        border-bottom: none;
+      }
+    }
+    &.ng2-smart-filters {
+      display: none;
+    }
+  }
+}

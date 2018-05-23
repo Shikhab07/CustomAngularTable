@@ -1,7 +1,7 @@
 <div class="row">
-  <div class="col-md-4">
-    <label class="col-md-4">Filter By Status:</label>
-    <div class="col-md-8">
+  <div class="col-md-12">
+    <label class="col-md-2">Filter By Status:</label>
+    <div class="col-md-2">
       <select class="form-control" #status (change)="onStatusFilterChange(status.value)">
         <option value="">All</option>
         <option value="active">Active</option>
@@ -9,11 +9,13 @@
       </select>
     </div>
   </div>
-  <div class="col-md-4">
-    <button id="addNew" (click)="addNewRecord($event)">ADD NEW</button>
-  </div>
   <div class="col-md-12">
-    <ng2-smart-table [settings]="settings" [source]="source" (createConfirm)="onCreateConfirm($event)">
+    <button id="addNew" [disabled]="ifCreateModeOpen()" class="btn btn-primary btn-add pull-right" (click)="addNewRecord($event)">ADD NEW</button>
+  </div>
+
+  <div class="col-md-12 add-top-margin">
+    <ng2-smart-table [settings]="settings" [source]="source" (createConfirm)="onCreateConfirm($event)" (editConfirm)="onUpdateConfirm($event)"
+      #grdTable>
     </ng2-smart-table>
   </div>
 </div>

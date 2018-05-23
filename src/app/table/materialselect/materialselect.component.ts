@@ -24,7 +24,6 @@ export class MaterialSelectComponent implements OnInit {
     ngOnInit() {
         if (this.rowData) {
             this.clonedData = _.clone(this.rowData);
-
             this.dataTextField = this.clonedData.dataTextField;
             this.dataValueField = this.clonedData.dataValueField;
             this.mapObjectToItemList(this.clonedData.list);

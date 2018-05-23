@@ -1,4 +1,6 @@
-import { Component, Output, Input, EventEmitter, OnInit } from '@angular/core';
+import {
+    Component, Output, Input, EventEmitter, OnInit, OnChanges, SimpleChanges, SimpleChange,
+} from '@angular/core';
 
 
 @Component({
@@ -8,7 +10,7 @@ import { Component, Output, Input, EventEmitter, OnInit } from '@angular/core';
 })
 export class CustomRadioButtonComponent implements OnInit {
     @Input() rowData: any;
-    @Output() radioButtonValueChange = new EventEmitter();
+    @Output() radioButtonValueChange = new EventEmitter<any>();
     constructor() {
 
     }
@@ -17,6 +19,7 @@ export class CustomRadioButtonComponent implements OnInit {
     }
 
     onClickingRadio(event) {
-        this.radioButtonValueChange.emit(this.rowData);
+        event.target.click();
+        this.radioButtonValueChange.emit({ rowData: this.rowData, target: event.target });
     }
 }

@@ -1,258 +1,131 @@
-import { Component, HostListener, OnInit, AfterViewInit } from '@angular/core';
+import {
+    Component, HostListener, OnInit, AfterViewInit, ViewEncapsulation,
+    Input, ViewChild, Output, EventEmitter
+} from '@angular/core';
 import { LocalDataSource } from 'ng2-smart-table';
-import { DomSanitizer } from '@angular/platform-browser';
 import _ = require('lodash');
 // components
 import { CustomButtonComponent } from './custombutton/custombutton.component';
 import { MaterialSelectComponent } from './materialselect/materialselect.component';
 import { CustomRadioButtonComponent } from './customradiobutton/customradiobutton.component';
-import { isNullOrUndefined } from 'util';
+import { isNullOrUndefined, isNull } from 'util';
+import { CustomEditorComponent } from './customeditor/customeditor.component';
+
 
 @Component({
     selector: 'app-custom-table',
     templateUrl: './customtable.component.html',
-    styleUrls: []
+    styleUrls: ['./shared/customtable.component.scss'],
+    encapsulation: ViewEncapsulation.None
 })
-export class CustomTableComponent implements AfterViewInit {
-    title = 'app';
+export class CustomTableComponent implements OnInit, AfterViewInit {
     source: LocalDataSource;
-    currentPerPage: any;
-    perPageSelect: any[] = [1, 2, 3];
-
     updatedRow: any;
-
-    constructor(private _sanitizer: DomSanitizer) {
-        this.source = new LocalDataSource(this.data);
+    settings;
+    mySettings;
+    @Input() data;
+    @Input() perPageSelect: any[] = [];
+    @Input() showPager: boolean;
+    @Input() columns;
+    @ViewChild('grdTable') grdTable;
+    @Output() addNewRowEvent = new EventEmitter();
+    @Output() updateRowEvent = new EventEmitter();
+    constructor() {
+        this.setInitialTableSettings();
+        this.settings = Object.assign({}, this.mySettings);
     }
 
-    countries = [
-        {
-            value: '1',
-            title: 'Norway'
-        },
-        {
-            value: '2',
-            title: 'Sweden'
-        },
-        {
-            value: '3',
-            title: 'UnitedStates'
-        },
-        {
-            value: '4',
-            title: 'Denmark'
-        },
-        {
-            value: '5',
-            title: 'Australia'
-        }
-    ];
-    zones = [
-        {
-            value: '4',
-            title: 'No-Nordic'
-        },
-        {
-            value: '2',
-            title: 'NA-NorthAmerica'
-        }
-    ];
-    settings = {
-        mode: 'inline',
-        columns: {
-            checkbox: {
-                title: '',
-                type: 'custom',
-                filter: false,
-                renderComponent: CustomRadioButtonComponent,
-                onComponentInitFunction: (instance: any) => {
-                    instance.radioButtonValueChange.subscribe(row => {
-                        this.updatedRow = row;
-                    });
-                },
-                editor: {
-                    type: 'checkbox',
-                    // config: {
-                    //     true: 'Yes',
-                    //     false: 'No',
-                    // }
+    @HostListener('document:keypress', ['$event'])
+    handleKeyboardEvent(event: KeyboardEvent) {
+        if (event.keyCode === 13) {
+            if (!this.ifCreateModeOpen()) {
+                const rows = this.grdTable.grid.getSelectedRows();
+                if (rows.length > 0) {
+                    // only one row can be selected at a time
+                    // radio is in first column
+                    if (rows[0].cells[0].newValue === true) {
+                        if (rows[0].data.id !== 0) {
+                            const elt: any = document.getElementsByClassName('ng2-smart-action-edit-save')[rows[0].index];
+                            elt.click();
+                        }
+                    } else {
+                        alert('Please select radio button to update.');
+                    }
+                } else {
+                    alert('Please select row to update.');
                 }
-            },
-            domain: {
-                title: 'Domain',
-                filter: false
-            },
-            country: {
-                title: 'Country',
+            }
+        }
+    }
+
+
+    ngOnInit() {
+        this.source = new LocalDataSource(this.data);
+        this.prepareColumns();
+    }
+
+    ngAfterViewInit() {
+        this.grdTable.grid.dataSet.willSelect = 'false';
+    }
+
+    public addColumn(col) {
+        if (col.type === 'list') {
+            this.mySettings.columns[col.value] = {
+                title: col.title,
                 filter: false,
                 type: 'custom',
                 valuePrepareFunction: (cell, row) => {
-                    row.list = this.countries;
-                    row.dataTextField = 'title';
-                    row.dataValueField = 'value';
-                    row.isSearchEnabled = false;
+                    row.list = col.list;
+                    row.dataTextField = col.dataTextField;
+                    row.dataValueField = col.dataValueField;
                     row.cellValue = cell;
                     return row;
                 },
                 renderComponent: MaterialSelectComponent,
                 onComponentInitFunction: (instance: any) => {
                     instance.eventSelection.subscribe(row => {
-                        console.log(row);
+                        // Here User can update row in database on dropdown value change
+
+                       this.updateRowEvent.emit(row);
                     });
                 },
                 editor: {
                     type: 'list',
                     config: {
-                        list: this.countries,
+                        list: col.list
                     }
                 }
-            },
-            currency: {
-                title: 'Currency',
-                filter: false
-            },
-            paymentprovider: {
-                title: 'Payment Provider',
-                filter: false
-            },
-            googleanalyticsId: {
-                title: 'Google Analytics Id',
-                filter: false
-            },
-            googleTagId: {
-                title: 'Google TagId',
-                filter: false
-            },
-            language: {
-                title: 'Language',
-                filter: false
-            },
-            status: {
-                title: 'Status',
+            };
+
+        } else if (col.type === 'button') {
+            this.mySettings.columns[col.value] = {
+                title: col.title,
                 filter: false,
                 type: 'custom',
                 renderComponent: CustomButtonComponent,
                 onComponentInitFunction: (instance: any) => {
                     instance.statusChange.subscribe(row => {
                         if (row !== '') {
+                            // can change below function depending on requirement
                             this.updateStatus(row);
+                            this.updateRowEvent.emit(row);
                         }
                     });
                 },
-                addable: false
-            },
-            zone: {
-                title: 'Zone',
-                filter: false,
-                type: 'custom',
-                valuePrepareFunction: (cell, row) => {
-                    row.list = this.zones;
-                    row.dataTextField = 'title';
-                    row.dataValueField = 'value';
-                    row.isSearchEnabled = false;
-                    row.cellValue = cell;
-                    return row;
-                },
-                renderComponent: MaterialSelectComponent,
-                onComponentInitFunction: (instance: any) => {
-                    instance.eventSelection.subscribe(row => {
-                        console.log(row);
-                    });
-                },
-                editor: {
-                    type: 'list',
-                    config: {
-                        list: this.zones,
-                    }
-                },
-            }
-        },
-        actions: {
-            position: 'right',
-            add: true,
-            edit: false,
-            delete: false
-        },
-        add: {
-            inputClass: '',
-            addButtonContent: '',
-            createButtonContent: '',
-            cancelButtonContent: '',
-            confirmCreate: true,
-        },
-        pager: {
-            display: true,
-            perPageSelect: this.perPageSelect
+                addable: false,
+                editable: false
+            };
+        } else {
+            this.mySettings.columns[col.value] = { title: col.title, filter: false };
         }
-    };
 
-    data = [
-        {
-            id: '1',
-            domain: 'proteinfabrikken.no',
-            country: 'Norway',
-            currency: 'NOK-kr',
-            paymentprovider: 'Manage',
-            googleTagId: 'UA-48839936-1',
-            googleanalyticsId: 'UA-48839936-1',
-            socialNetworks: 'Manage',
-            language: 'Norwegian',
-            zone: 'No-Nordic',
-            status: 'active'
-        },
-        {
-            id: '2',
-            domain: 'proteinfabrikken.se',
-            country: 'Sweden',
-            currency: 'SEK-kr',
-            paymentprovider: 'Manage',
-            googleTagId: 'UA-48839937-1',
-            googleanalyticsId: 'UA-48839937-1',
-            socialNetworks: 'Manage',
-            language: 'Swedish',
-            zone: 'No-Nordic',
-            status: 'active'
-        },
-        {
-            id: '3',
-            domain: 'proteinfabrikken.com',
-            country: 'UnitedStates',
-            currency: 'DKK-Kr',
-            paymentprovider: 'Manage',
-            googleTagId: 'UA-48839939-1',
-            googleanalyticsId: 'UA-48839939-1',
-            socialNetworks: 'Manage',
-            language: 'English',
-            zone: 'NA-NorthAmerica',
-            status: 'inactive'
-        }
-    ];
-
-
-
-    @HostListener('document:keypress', ['$event'])
-    handleKeyboardEvent(event: KeyboardEvent) {
-        if (event.keyCode === 13) {
-            if (!isNullOrUndefined(this.updatedRow)) {
-                if (this.updatedRow.id !== 0) {
-                    // write code to update row in database
-                }
-            } else {
-                const elt: any = document.getElementsByClassName('ng2-smart-action-add-create')[0];
-                elt.click();
-            }
-        }
+        this.settings = Object.assign({}, this.mySettings);
     }
 
-    ngAfterViewInit() {
-        const actionColumn: any = document.getElementsByClassName('ng2-smart-actions')[0];
-        actionColumn.style.display = 'none';
-    }
-
-    updateStatus(rowdata) {
-        const row = this.data.find(x => x.id === rowdata.id);
-        row.status = rowdata.status;
-        this.source.refresh();
+    prepareColumns() {
+        this.columns.map(col => {
+            this.addColumn(col);
+        });
     }
 
     onStatusFilterChange(value) {
@@ -268,37 +141,136 @@ export class CustomTableComponent implements AfterViewInit {
             ], true); // false for OR true for AND
         }
 
-        // if from database , set filter on items from database   
+        // if from database , set filter on items from database
     }
 
+    setInitialTableSettings() {
+        this.mySettings = {
+            mode: 'inline',
+            // selectMode: 'multi',
+            columns: {
+                checkbox: {
+                    title: '',
+                    type: 'custom',
+                    filter: false,
+                    // defaultValue: true,
+                    renderComponent: CustomRadioButtonComponent,
+                    onComponentInitFunction: (instance: any) => {
+                        instance.radioButtonValueChange.subscribe(row => {
+                            this.updatedRow = row.rowData;
+                            this.switchToEdit();
+                        });
+                    },
+                    editor: {
+                        type: 'custom',
+                        component: CustomEditorComponent
+                    }
+                },
+                domain: {
+                    title: 'Domain',
+                    filter: false
+                }
+            },
+            actions: {
+                position: 'left',
+                add: true,
+                edit: true,
+                delete: false
+            },
+            add: {
+                inputClass: '',
+                addButtonContent: '',
+                createButtonContent: '',
+                cancelButtonContent: '',
+                confirmCreate: true,
+            },
+            edit: {
+                confirmSave: true
+                // saveButtonContent: '<i class="fa fa-check" aria-hidden="true"></i>',
+                // cancelButtonContent: '<i class="fa fa-close" aria-hidden="true"></i>'
+            },
+            pager: {
+                display: this.showPager,
+                perPageSelect: this.perPageSelect,
+                perPage: 3
+            },
+            attr: {
+                class: ''
+            }
+        };
+    }
+
+    getListFromColumns(field) {
+        const column = this.columns.find(col => col.value === field);
+        if (!isNullOrUndefined(column)) {
+            return column.list;
+        }
+    }
     onCreateConfirm(event) {
-        if (window.confirm('Are you sure you want to create?')) {
-            // event.newData['name'] += ' + added in code';
+        // first check if radio button is selected
+        const newRow = this.grdTable.grid.dataSet.newRow;
+        if (!isNullOrUndefined(newRow)) {
+            if (newRow.cells[0].newValue === true) {
+                if (window.confirm('Are you sure you want to create?')) {
+                    event.confirm.resolve(event.newData);
+                    // validate first then
+                    this.createNewRecord(event.newData);
+                } else {
+                    event.confirm.reject();
+                }
+            } else {
+                alert('Please select radio button to create new record.');
+            }
+        }
+    }
 
+    getTitleFromValue(list: any[], value) {
+        const item = list.find(x => x.value === value);
+        return (!isNullOrUndefined(item) ? item.title : value);
+    }
+
+    addNewRecord(event) {
+        this.grdTable.grid.createFormShown = true;
+    }
+
+    updateStatus(rowdata) {
+        const row = this.data.find(x => x.id === rowdata.id);
+        row.status = rowdata.status;
+        this.source.refresh();
+    }
+
+    createNewRecord(data) {
+        // change variables according to your data
+        // TO DO service hit
+        data.country = this.getTitleFromValue(this.getListFromColumns('country'), data.country);
+        data.zone = this.getTitleFromValue(this.getListFromColumns('zone'), data.zone);
+        data.status = 'active';
+
+        // emit output event to parent for service hit
+         this.addNewRowEvent.emit(data);
+    }
+
+    onUpdateConfirm(event) {
+        if (window.confirm('Are you sure you want to update?')) {
             event.confirm.resolve(event.newData);
-
-            // save to db
-            // TO DO function to call service function to add new record to db
-            console.log(event.newData);
-            this.createNewRecord(event.newData);
+            // change variables according to your data
+            event.newData.country = this.getTitleFromValue(this.getListFromColumns('country'), event.newData.country);
+            event.newData.zone = this.getTitleFromValue(this.getListFromColumns('zone'), event.newData.zone);
+            event.newData.status = 'active';
+            // write code to update row in database
+            this.updateRowEvent.emit(event.newData);
         } else {
             event.confirm.reject();
         }
     }
 
-    createNewRecord(data) {
-        // TO DO service hit
-        data.country = this.getTitleFromValue(this.countries, data.country);
-        data.zone = this.getTitleFromValue(this.zones, data.zone);
-        data.status = 'active';
+    switchToEdit() {
+        this.grdTable.grid.getSelectedRows().forEach((row) => {
+            this.grdTable.grid.edit(row);
+        });
     }
 
-    getTitleFromValue(list: any[], value) {
-        return list.find(x => x.value === value).title;
-    }
-
-    addNewRecord(event) {
-        const addbtn: any = document.getElementsByClassName('ng2-smart-action-add-add')[0];
-        addbtn.click();
+    ifCreateModeOpen() {
+        return this.grdTable.grid.createFormShown;
     }
 }

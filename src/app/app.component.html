@@ -1,1 +1,6 @@
-<app-custom-table></app-custom-table>
+<app-custom-table [data]="data" [perPageSelect]="perPageSelect"
+ [showPager]='true' [columns]="tabcolumns"
+ (updateRowEvent)="onUpdate($event)"
+ (addNewRowEvent)="onAddEvent($event)"></app-custom-table>
+
+<!-- if showpager= false, no need to pass perPageSelect input property -->

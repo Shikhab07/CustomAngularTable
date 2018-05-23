@@ -6,7 +6,6 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
   styleUrls: []
 })
 export class CustomModalDialogComponent {
-  
   constructor(
     public dialogRef: MatDialogRef<CustomModalDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any) { }
